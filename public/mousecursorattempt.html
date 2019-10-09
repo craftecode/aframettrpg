@@ -1,0 +1,302 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Aframe TTRPG</title>
+    <meta name="description" content="Aframe TTRPG">
+
+    <script src="https://aframe.io/releases/0.9.2/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>
+    <script src="easyrtc/easyrtc.js"></script>
+    <script src="https://unpkg.com/networked-aframe@^0.6.0/dist/networked-aframe.min.js"></script>
+
+    <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
+    <script src="https://unpkg.com/aframe-particle-system-component@1.0.5/dist/aframe-particle-system-component.min.js"></script>
+    <script src="/js/spawn-in-circle.component.js"></script>
+    <script src="//cdn.rawgit.com/donmccurdy/aframe-extras/v6.0.0/dist/aframe-extras.min.js"></script>
+    <script src="//cdn.rawgit.com/donmccurdy/aframe-physics-system/v2.1.0/dist/aframe-physics-system.min.js"></script>
+    <script src="https://unpkg.com/aframe-atlas-uvs-component@^1.0.0/dist/aframe-atlas-uvs-component.min.js"></script>
+    <script src="https://rawgit.com/fernandojsg/aframe-teleport-controls/master/dist/aframe-teleport-controls.min.js"></script>
+    <script src="https://unpkg.com/super-hands@3.0.0/dist/super-hands.min.js"></script>
+    
+  </head>
+  <body>
+    <a-scene networked-scene="
+      room: basic;
+      debug: true;"
+             cursor="rayOrigin: mouse; objects: .clickable">
+      <a-assets>
+
+        <img id="grid" src="https://img.gs/bbdkhfbzkk/stretch/https://i.imgur.com/25P1geh.png" crossorigin="anonymous">
+        <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/http://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" />
+        
+        
+        <img id="dirt" src="https://cdn.glitch.com/3abf7543-e204-453e-930e-52da666500f0%2Fdirt.png?v=1567806452919" crossorigin="anonymous">
+
+        <!-- Templates -->
+
+        <!-- Avatar -->
+        <template id="avatar-template">
+          <a-entity class="avatar">
+            <a-sphere class="head"
+              color="#5985ff"
+              scale="0.45 0.5 0.4"
+              random-color
+            ></a-sphere>
+            <a-entity class="face"
+              position="0 0.05 0"
+            >
+              <a-sphere class="eye"
+                color="#efefef"
+                position="0.16 0.1 -0.35"
+                scale="0.12 0.12 0.12"
+              >
+                <a-sphere class="pupil"
+                  color="#000"
+                  position="0 0 -1"
+                  scale="0.2 0.2 0.2"
+                ></a-sphere>
+              </a-sphere>
+              <a-sphere class="eye"
+                color="#efefef"
+                position="-0.16 0.1 -0.35"
+                scale="0.12 0.12 0.12"
+              >
+                <a-sphere class="pupil"
+                  color="#000"
+                  position="0 0 -1"
+                  scale="0.2 0.2 0.2"
+                ></a-sphere>
+              </a-sphere>
+            </a-entity>
+          </a-entity>
+        </template>
+        
+        <a-mixin id="myAtlas" atlas-uvs="totalRows: 4; totalColumns: 4" material="src: https://cdn.glitch.com/3abf7543-e204-453e-930e-52da666500f0%2Ftextures2.png" geometry="primitive: plane; buffer: false; skipCache: true"></a-mixin>
+        <a-mixin id="myAtlas02" atlas-uvs="totalRows: 2; totalColumns: 1" material="src: https://cdn.glitch.com/3abf7543-e204-453e-930e-52da666500f0%2Fprintableheroes_bugbear01.png; transparent: true" geometry="primitive: plane; buffer: false; skipCache: true"></a-mixin>
+        
+        <img id="bugbear01-front" material="src:https://cdn.glitch.com/3abf7543-e204-453e-930e-52da666500f0%2Fprintableheroes_bugbear01_front.png?v=1567954420073" crossorigin="anonymous">
+        
+        <img id="bugbear01v2" src="https://raw.githubusercontent.com/craftecode/hello-world/master/aframettrpg/printableheroes_bugbear01_front.png" crossorigin="anonymous">
+
+        
+        <a-mixin id="5ft-ground-square" geometry="primitive:box;width:2.5;height:0.1;depth:2.5;" material="src: #dirt;repeat: 10 10;metalness:0;roughness:0.9;"></a-mixin>    
+
+        
+        <img id="disp" src="https://cdn.glitch.com/3abf7543-e204-453e-930e-52da666500f0%2Fstone36displacement_christopherpereira.png?v=1568203896766">
+        <!-- /Templates -->
+      </a-assets>
+      
+      
+      <!-- a-entity id="cameraRig" position="0 1.6 0">
+        <a-entity id="head" camera wasd-controls look-controls></a-entity>
+        <a-entity id="left-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head;"></a-entity>
+        <a-entity id="right-hand" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head;"></a-entity>
+      </a-entity -->
+      <!-- For GearVR and DaydreamVR different code is required, see https://github.com/fernandojsg/aframe-teleport-controls/ -->
+      
+      
+      <!-- The following is an attempt to combine the teleport and superhands things -->
+      <!-- a-entity id="cameraRig" position="0 1.6 0">
+        <a-entity id="head" camera wasd-controls look-controls></a-entity>
+        <a-entity id="left-hand" sphere-collider="objects: a-box" super-hands hand-controls="left" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head;"></a-entity>
+        <a-entity id="right-hand" sphere-collider="objects: a-box" super-hands hand-controls="right" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #head;"></a-entity>
+      </a-entity -->
+      
+      <!-- Test box for superhands-->
+      <a-box id="superhandstestbox" hoverable grabbable stretchable draggable droppable color="blue" position="0 0 3"></a-box>
+      
+      <a-box id="test2" clickable class="clickable" color="blue" position="-2.5 0 -2"
+             animation__1="property:position; to: -2.5 0.125 -10; loop:0; easing:linear; dur:2000;  startEvents:click"></a-box>
+      
+      <!-- The following is the basic superhands to try if the above doesn't work -->
+      <!-- a-entity>
+        <a-camera></a-camera>
+        <a-entity sphere-collider="objects: a-box" super-hands hand-controls="left"></a-entity>
+        <a-entity sphere-collider="objects: a-box" super-hands hand-controls="right"></a-entity>
+      </a-entity -->
+      
+      
+      <!-- This is the player for networked aframe -->
+      <a-entity id="player"
+                camera
+                networked="template:#avatar-template;attachTemplateToLocal:false;"
+                position="0 1.6 0"
+                spawn-in-circle="radius:3"
+                wasd-controls
+                look-controls
+                animation__birdseyeview="property:position; to: 0 15 5; dur: 4000; easing:linear; loop:0; startEvents:birdseyeview">
+        <a-sphere class="head"
+          visible="false"
+          random-color
+        ></a-sphere>
+        <!-- The hands in the example were attached to a rig -->
+        <a-entity sphere-collider="objects: a-box" super-hands hand-controls="left"></a-entity>
+        <a-entity sphere-collider="objects: a-box" super-hands hand-controls="right"></a-entity>
+        <a-entity ></a-entity> 
+      </a-entity>
+      
+      
+      <!-- a-entity id="1" mixin="myAtlas" atlas-uvs="column: 1; row: 1"></a-entity -->
+      
+      <!-- a-entity id="bugbear01-base" geometry="primitive:cone; radiusBottom: 1; radiusTop: .9; height:0.2" material="color:black">
+        <a-entity id="bugbear01a" mixin="myAtlas02" atlas-uvs="column: 1; row: 2" position="0 1 0"></a-entity>
+      </a-entity -->
+
+      
+      <a-entity id="bugbear04-base" 
+                geometry="primitive: cone; radiusBottom: 1.1; radiusTop: 1.03; height: 0.2" 
+                material="color: black" 
+                position="-2.5 0 -10"
+                animation__move="property:position; to: -2.5 0.125 -2.5; loop:0; easing:linear; dur:2000; startEvents:move"
+                animation__wigglewithit="property:rotation; from: 0 0 -2; to: 0 0 2; loop: 19; dir:alternate; easing:linear; dur:100; startEvents:move,moveback"
+                animation__moveback="property:position; to: -2.5 0.125 -10; loop:0; easing:linear; dur:2000; startEvents:moveback"
+                animation__straighten="property:rotation; to: 0 0 0; loop:0; easing:linear; dur:1; delay:2000; startEvents:move,moveback"
+                hoverable grabbable stretchable draggable droppable
+                >
+        <a-entity id="bugbear04a" material="src: #bugbear01v2; transparent: true; side:  double;" geometry="primitive: plane; height: 2; width: 2" position="0 1.097 0"></a-entity>
+      </a-entity>
+      
+      
+      
+      <a-entity id="bugbear02-base" geometry="primitive: cone; radiusBottom: 1.1; radiusTop: 1.03; height: 0.2" material="color: black" position="0 0 -7.5">
+      <a-entity id="bugbear02a" material="src: #bugbear01v2; transparent: true" geometry="primitive: plane; height: 2; width: 2" position="0 1.097 0.04912"></a-entity>
+      <a-entity id="bugbear02b" material="src: #bugbear01v2; transparent: true" geometry="primitive: plane; height: 2; width: 2" position="0 1.097 -0.04912" rotation="0 180 0"></a-entity>
+        <a-entity id="backingcard02" visible="true">
+          <a-entity geometry="height: 1.2; width: 2; depth: 0.09" material="color: whitesmoke" position="0 0.64949 0"></a-entity>
+          <a-entity geometry="primitive: cylinder; height: 0.09; thetaLength: 180; thetaStart: 90" material="color: whitesmoke" position="0 1.24756 0" rotation="90 0"></a-entity>
+        </a-entity>
+      </a-entity>
+      
+      
+      <a-entity id="bugbear05-base" 
+                geometry="primitive: cone; radiusBottom: 1.1; radiusTop: 1.03; height: 0.2" 
+                material="color: black" 
+                position="-2.5 0 -10"
+                animation__move="property:position; from: -10 0.125 -10; to: -10 0.125 -2.5; loop:true; dir:alternate; easing:linear; dur:2000"
+                animation__wigglewithit="property:rotation; from: 0 0 -2; to: 0 0 2; loop: true; dir:alternate; easing:linear; dur:100"
+                hoverable grabbable stretchable draggable droppable
+                >
+        <a-entity id="bugbear05a" material="src: #bugbear01v2; transparent: true; side:  double;" geometry="primitive: plane; height: 2; width: 2" position="0 1.097 0"></a-entity>
+      </a-entity>
+      
+      
+      <a-entity id="bugbear03-base" 
+                geometry="primitive: cone; radiusBottom: 1.1; radiusTop: 1.03; height: 0.2" 
+                material="color: black" 
+                position="0 0 -2.5"
+                hoverable grabbable stretchable draggable droppable>
+        <a-entity id="bugbear03a" material="src: #bugbear01v2; transparent: true; side:  double;" geometry="primitive: plane; height: 2; width: 2" position="0 1.097 0"></a-entity>
+      </a-entity>
+      
+
+      <!-- a-entity position="0 0 0"
+        geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
+                scale="2.5 2.5 2.5"
+        material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"></a-entity-->
+      
+      <a-grid scale="2.5 2.5 2.5" material="shader: flat; color: #715b5b"></a-grid>
+
+      <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
+      <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
+
+      <a-sky src="#sky" rotation="0 -90 0"></a-sky>
+      <a-entity id="particles" particle-system="preset: snow"></a-entity>
+      
+      
+      
+      <a-entity id="ground001a" mixin="5ft-ground-square" position="0 0 -2.5"></a-entity>
+      <a-entity id="ground002a" mixin="5ft-ground-square" position="0 0 -5"></a-entity>
+      <a-entity id="ground003a" mixin="5ft-ground-square" position="0 0 -7.5"></a-entity>
+      <a-entity id="ground004a" mixin="5ft-ground-square" position="0 0 -10"></a-entity>
+      <a-entity id="ground005a" mixin="5ft-ground-square" position="0 0 -12.5"></a-entity>
+      <a-entity id="ground006a" mixin="5ft-ground-square" position="0 0 -15"></a-entity>
+      <a-entity id="ground001b" mixin="5ft-ground-square" position="-2.5 0 -2.5"></a-entity>
+      <a-entity id="ground002b" mixin="5ft-ground-square" position="-2.5 0 -5"></a-entity>
+      <a-entity id="ground003b" mixin="5ft-ground-square" position="-2.5 0 -7.5"></a-entity>
+      <a-entity id="ground004b" mixin="5ft-ground-square" position="-2.5 0 -10"></a-entity>
+      <a-entity id="ground005b" mixin="5ft-ground-square" position="-2.5 0 -12.5"></a-entity>
+      <a-entity id="ground006b" mixin="5ft-ground-square" position="-2.5 0 -15"></a-entity>
+
+      
+      <a-entity id="displacement-map-test" geometry="primitive:box;width:2.5;height:0.1;depth:2.5;segments-width:20;segments-depth:20;displacementScale:0.1" 
+                position="-10 0 -2.5" 
+                material="src: #dirt;repeat: 10 10;metalness:0;roughness:0.9;displacementMap:#disp; displacementScale:  0.2;  displacementBias:  0; "></a-entity>
+      
+      
+      <a-entity id="wall01" geometry="primitive:box;width:2.5;height:3;depth:12.5;" material="src: #dirt;repeat: 10 10" position="-5 1.5 -5"></a-entity>
+      <a-entity id="wall02" geometry="primitive:box;width:2.5;height:3;depth:17.5;" material="src: #dirt;repeat: 10 10" position="2.5 1.5 -5"></a-entity>
+      
+      <a-entity id="wall02-2" geometry="width: 2.5; height: 3; depth: 17.5" material="src: #dirt;repeat: 10 10" position="-4.96073 1.5 -15" rotation="0 90 0"></a-entity>
+      
+      
+    </a-scene>
+
+    
+    <div class="hoverbutton" style="position:fixed;top:20px;right:20px;">
+      <button onclick="bugbearForward()" >Move ye bugbear forward</button>
+      <button onclick="bugbearBackward()">Move ye bugbear backwards</button>
+      <button onclick="birdseyeview()">Camera up</button>
+    </div>
+    
+    <!--
+Old buttons
+ <button onclick="bugbearForward()" style="opacity:0.1; border: none;background-color: Transparent;">Move ye bugbear forward</button>
+      <button onclick="bugbearBackward()" style="opacity:0.1; border: none;background-color: Transparent;">Move ye bugbear backwards</button>
+
+-->
+    
+    <script>
+      
+      function bugbearForward() {
+        var bugbear = 'bugbear04-base';
+        var emission = 'move';
+        document.getElementById(bugbear).emit(emission)
+      }
+    
+      //This function below is for the button in place of the regular enterVR button in the bottom right. I cut it out so I could record a video. 
+      function bugbearBackward() {
+        var bugbear = 'bugbear04-base';
+        var emission = 'moveback';
+        document.getElementById(bugbear).emit(emission)
+      }
+      
+      function birdseyeview() {
+        var thing = 'player';
+        var emission = 'birdseyeview';
+        document.getElementById(thing).emit(emission)
+      }
+      
+    </script>
+
+    
+    
+    <script>
+      // On mobile remove elements that are resource heavy
+      var isMobile = AFRAME.utils.device.isMobile();
+
+      if (isMobile) {
+        var particles = document.getElementById('particles');
+        particles.parentNode.removeChild(particles);
+      }
+      
+      // Define custom schema for syncing avatar color, set by random-color
+      NAF.schemas.add({
+        template: '#avatar-template',
+        components: [
+          'position',
+          'rotation',
+          {
+            selector: '.head',
+            component: 'material',
+            property: 'color'
+          }
+        ]
+      });
+    </script>
+    
+    
+    
+    
+    
+  </body>
+</html>
